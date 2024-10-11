@@ -284,9 +284,9 @@ function Init_Panel() {
     mkdir -p "$RUN_BASE_DIR"
     rm -rf "$RUN_BASE_DIR:?/*"
 
-    # 离线安装 - 将文件从 /tmp/1panel-v1.10.18-lts-linux-amd64 拷贝到目标目录
-    cp /tmp/1panel-v1.10.18-lts-linux-amd64/1panel /usr/local/bin && chmod +x /usr/local/bin/1panel
-    cp /tmp/1panel-v1.10.18-lts-linux-amd64/1pctl /usr/local/bin && chmod +x /usr/local/bin/1pctl
+    # 拷贝必要的文件
+    cp /tmp/1panel-v1.10.18-lts-linux-amd64/panel /usr/local/bin/ && chmod +x /usr/local/bin/panel
+    cp /tmp/1panel-v1.10.18-lts-linux-amd64/1pctl /usr/local/bin/ && chmod +x /usr/local/bin/1pctl
 
     # 配置面板
     sed -i -e "s#BASE_DIR=.*#BASE_DIR=${PANEL_BASE_DIR}#g" /usr/local/bin/1pctl
@@ -298,6 +298,15 @@ function Init_Panel() {
     log "面板配置完成"
     log "使用 Docker 启动 1Panel"
 
+    # 使用本地的 Dockerfile 构建镜像
+    if [ -d "/tmp/1panel-v1.10.18-lts-linux-amd64/docker" ]; then
+        docker build -t 1panel:latest -f /tmp/1panel-v1.10.18-lts-linux-amd64/docker/Dockerfile /tmp/1panel-v1.10.18-lts-linux-amd64/docker
+    else
+        log "未找到 Dockerfile 目录"
+        exit 1
+    fi
+
+    # 启动 1Panel
     docker run -d \
         --name 1panel \
         -p "$PANEL_PORT:$PANEL_PORT" \
@@ -307,6 +316,7 @@ function Init_Panel() {
         -v "$RUN_BASE_DIR":/data \
         1panel:latest
 }
+
 function Get_Ip(){
     active_interface=$(ip route get 8.8.8.8 | awk 'NR==1 {print $5}')
     if [[ -z $active_interface ]]; then
