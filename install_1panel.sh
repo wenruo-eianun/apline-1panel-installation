@@ -343,7 +343,7 @@ function Show_Result(){
 }
 
 function main(){
-    Check_Root
+Check_Root
 Prepare_System
 Download_1Panel
 Set_Dir
