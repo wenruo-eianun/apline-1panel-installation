@@ -307,6 +307,7 @@ function Init_Panel() {
 
 Check_Root
 Prepare_System
+Download_1Panel
 Set_Dir
 Install_Docker
 Set_Port
