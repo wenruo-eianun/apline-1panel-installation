@@ -20,4 +20,16 @@ rm -f /usr/local/bin/1panel /usr/local/bin/1pctl
 ```bash
 sh <(curl -s https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/main/uninstall_1panel.sh)
 ```
-
+### docker版本1panel
+```bash
+docker run -d \
+    --name 1panel \
+    --restart always \
+    --network host \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v /var/lib/docker/volumes:/var/lib/docker/volumes \
+    -v /opt:/opt \
+    -v /root:/root \
+    -e TZ=Asia/Shanghai \
+    moelin/1panel:latest
+```
