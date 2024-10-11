@@ -297,22 +297,17 @@ function Init_Panel() {
 
     log "面板配置完成"
     log "使用 Docker 启动 1Panel"
-
-    # 这里要确保你能使用本地的 Dockerfile，如果不需要从 Docker Hub 下载，可以直接构建。
-    cd /tmp/1panel-v1.10.18-lts-linux-amd64/docker || exit
-    docker build -t 1panel . || {
-        log "Docker 构建失败"
-        exit 1
-    }
-
-    docker run -d \
-        --name 1panel \
-        -p "$PANEL_PORT:$PANEL_PORT" \
-        -e PANEL_USERNAME="$PANEL_USERNAME" \
-        -e PANEL_PASSWORD="$PANEL_PASSWORD" \
-        -e PANEL_ENTRANCE="$PANEL_ENTRANCE" \
-        -v "$RUN_BASE_DIR":/data \
-        1panel:latest
+docker run -d \
+    --name 1panel \
+    --restart always \
+    --network host \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v /var/lib/docker/volumes:/var/lib/docker/volumes \
+    -v /opt:/opt \
+    -v /root:/root \
+    -e TZ=Asia/Shanghai \
+    moelin/1panel:latest
+ 
 }
 
 function Get_Ip(){
