@@ -120,6 +120,9 @@ function Download_1Panel() {
             log "权限授予失败"
             exit 1
         fi
+          # 删除下载的压缩包
+        rm -f /tmp/1panel-v1.10.18-lts-linux-amd64.tar.gz
+        log "已删除安装包：1panel-v1.10.18-lts-linux-amd64.tar.gz"
     else
         log "安装目录不存在：$install_dir"
         exit 1
