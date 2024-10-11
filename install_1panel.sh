@@ -10,7 +10,39 @@ CURRENT_DIR=$(
     cd "$(dirname "$0")" || exit
     pwd
 )
+# 系统检测
+OS_TYPE=$(uname -s)
 
+function install_dependencies() {
+    case "$OS_TYPE" in
+        Linux)
+            if [ -f /etc/alpine-release ]; then
+                apk add --no-cache wget tar
+            elif [ -f /etc/debian_version ]; then
+                apt update && apt install -y wget tar
+            elif [ -f /etc/redhat-release ]; then
+                yum install -y wget tar || dnf install -y wget tar
+            elif [ -f /etc/centos-release ]; then
+                yum install -y wget tar
+            elif [ -f /etc/kali.version ]; then
+                apt update && apt install -y wget tar
+            elif [ -f /etc/arch-release ]; then
+                pacman -Sy --noconfirm wget tar
+            elif [ -f /etc/almalinux-release ]; then
+                dnf install -y wget tar
+            elif [ -f /etc/rocky-release ]; then
+                dnf install -y wget tar
+            else
+                echo "不支持的操作系统"
+                exit 1
+            fi
+            ;;
+        *)
+            echo "不支持的操作系统"
+            exit 1
+            ;;
+    esac
+}
 function log() {
     message="[1Panel Log]: $1 "
     case "$1" in
