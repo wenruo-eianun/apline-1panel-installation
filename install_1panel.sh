@@ -54,6 +54,34 @@ function Prepare_System() {
         exit 1
     fi
 }
+function Download_1Panel() {
+    log "下载 1Panel 离线安装包..."
+    wget -O /tmp/1panel-v1.10.18-lts-linux-amd64.tar.gz https://github.com/wenruo-eianun/apline-1panel-installation/releases/download/1panel-v1.10.18-lts-linux-amd64.tar.gz
+    if [ $? -eq 0 ]; then
+        log "下载完成"
+    else
+        log "下载失败"
+        exit 1
+    fi
+
+    log "解压 1Panel 离线安装包..."
+    tar -xzvf /tmp/1panel-v1.10.18-lts-linux-amd64.tar.gz -C /tmp
+    if [ $? -eq 0 ]; then
+        log "解压完成"
+    else
+        log "解压失败"
+        exit 1
+    fi
+    log "授予 install.sh 执行权限..."
+    chmod +x /tmp/1panel-v1.10.18-lts-linux-amd64/install.sh
+    if [ $? -eq 0 ]; then
+        log "权限授予成功"
+    else
+        log "权限授予失败"
+        exit 1
+    fi
+}
+
 
 function Set_Dir() {
     read -t 120 -p "设置 1Panel 安装目录（默认为/opt）：" PANEL_BASE_DIR
