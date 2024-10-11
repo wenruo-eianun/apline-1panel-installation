@@ -45,21 +45,23 @@ function install_dependencies() {
 }
 function log() {
     message="[1Panel Log]: $1 "
+    local log_file="/tmp/install.log"
     case "$1" in
         *"失败"*|*"错误"*|*"请使用 root 或 sudo 权限运行此脚本"*)
-            echo -e "${RED}${message}${NC}" 2>&1 | tee -a "${CURRENT_DIR}"/install.log
+            echo -e "${RED}${message}${NC}" 2>&1 | tee -a "$log_file"
             ;;
         *"成功"*)
-            echo -e "${GREEN}${message}${NC}" 2>&1 | tee -a "${CURRENT_DIR}"/install.log
+            echo -e "${GREEN}${message}${NC}" 2>&1 | tee -a "$log_file"
             ;;
         *"忽略"*|*"跳过"*)
-            echo -e "${YELLOW}${message}${NC}" 2>&1 | tee -a "${CURRENT_DIR}"/install.log
+            echo -e "${YELLOW}${message}${NC}" 2>&1 | tee -a "$log_file"
             ;;
         *)
-            echo -e "${BLUE}${message}${NC}" 2>&1 | tee -a "${CURRENT_DIR}"/install.log
+            echo -e "${BLUE}${message}${NC}" 2>&1 | tee -a "$log_file"
             ;;
     esac
 }
+
 
 echo
 cat << EOF
@@ -87,8 +89,10 @@ function Prepare_System() {
     fi
 }
 function Download_1Panel() {
+    set -x  # 开始调试输出
     log "下载 1Panel 离线安装包..."
     wget -q -nc -O /tmp/1panel-v1.10.18-lts-linux-amd64.tar.gz https://github.com/wenruo-eianun/apline-1panel-installation/releases/download/1.0/1panel-v1.10.18-lts-linux-amd64.tar.gz
+    set +x  # 停止调试输出
     if [ $? -eq 0 ]; then
         log "下载完成"
     else
