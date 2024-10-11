@@ -4,13 +4,13 @@
 在终端中运行以下命令来一键安装 `1Panel`：
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/main/install_1panel.sh)
+sh <(curl -s https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/main/install_1panel.sh)
 ```
 
 ### 一键卸载指令
 一键卸载 `1Panel`：
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/main/uninstall_1panel.sh)
+sh <(curl -s https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/main/uninstall_1panel.sh)
 ```
 
