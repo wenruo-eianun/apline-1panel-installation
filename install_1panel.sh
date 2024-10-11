@@ -142,12 +142,12 @@ function Install_Docker() {
     if command -v docker >/dev/null 2>&1; then
         log "检测到 Docker 已安装，跳过安装步骤"
         log "启动 Docker "
-        rc-service docker start 2>&1 | tee -a "${CURRENT_DIR}"/install.log
+        rc-service docker start 2>&1 | tee -a "${CURRENT_DIR}"/tmp/install.log
     else
         log "... 安装 Docker"
         apk add --no-cache docker
         rc-update add docker default
-        rc-service docker start 2>&1 | tee -a "${CURRENT_DIR}"/install.log
+        rc-service docker start 2>&1 | tee -a "${CURRENT_DIR}"/tmp/install.log
     fi
 }
 
@@ -304,8 +304,46 @@ function Init_Panel() {
         -v "$RUN_BASE_DIR":/data \
         1panel:latest
 }
+function Get_Ip(){
+    active_interface=$(ip route get 8.8.8.8 | awk 'NR==1 {print $5}')
+    if [[ -z $active_interface ]]; then
+        LOCAL_IP="127.0.0.1"
+    else
+        LOCAL_IP=$(ip -4 addr show dev "$active_interface" | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+    fi
 
-Check_Root
+    PUBLIC_IP=$(curl -s https://api64.ipify.org)
+    if [[ -z "$PUBLIC_IP" ]]; then
+        PUBLIC_IP="N/A"
+    fi
+    if echo "$PUBLIC_IP" | grep -q ":"; then
+        PUBLIC_IP=[${PUBLIC_IP}]
+        1pctl listen-ip ipv6
+    fi
+}
+function Show_Result(){
+    log ""
+    log "=================感谢您的耐心等待，安装已经完成=================="
+    log ""
+    log "请用浏览器访问面板:"
+    log "外网地址: http://$PUBLIC_IP:$PANEL_PORT/$PANEL_ENTRANCE"
+    log "内网地址: http://$LOCAL_IP:$PANEL_PORT/$PANEL_ENTRANCE"
+    log "面板用户: $PANEL_USERNAME"
+    log "面板密码: $PANEL_PASSWORD"
+    log ""
+    log "项目官网: https://1panel.cn"
+    log "项目文档: https://1panel.cn/docs"
+    log "代码仓库: https://github.com/1Panel-dev/1Panel"
+    log ""
+    log "如果使用的是云服务器，请至安全组开放 $PANEL_PORT 端口"
+    log "wenruo修改适配apline系统 仅个人使用"
+    log "为了您的服务器安全，在您离开此界面后您将无法再看到您的密码，请务必牢记您的密码。"
+    log ""
+    log "================================================================"
+}
+
+function main(){
+    Check_Root
 Prepare_System
 Download_1Panel
 Set_Dir
@@ -316,5 +354,9 @@ Set_Entrance
 Set_Username
 Set_Password
 Init_Panel
+Get_Ip
+Show_Result
+}
+main
 
 log "======================= 安装完成 ======================="
