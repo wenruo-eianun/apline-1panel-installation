@@ -88,7 +88,7 @@ function Prepare_System() {
 }
 function Download_1Panel() {
     log "下载 1Panel 离线安装包..."
-    wget -O /tmp/1panel-v1.10.18-lts-linux-amd64.tar.gz https://github.com/wenruo-eianun/apline-1panel-installation/releases/download/1panel-v1.10.18-lts-linux-amd64.tar.gz
+    wget -O /tmp/1panel-v1.10.18-lts-linux-amd64.tar.gz https://github.com/wenruo-eianun/apline-1panel-installation/releases/download/1.0/1panel-v1.10.18-lts-linux-amd64.tar.gz
     if [ $? -eq 0 ]; then
         log "下载完成"
     else
@@ -104,12 +104,20 @@ function Download_1Panel() {
         log "解压失败"
         exit 1
     fi
-    log "授予 install.sh 执行权限..."
-    chmod +x /tmp/1panel-v1.10.18-lts-linux-amd64/install.sh
-    if [ $? -eq 0 ]; then
-        log "权限授予成功"
+
+    local install_dir="/tmp/1panel-v1.10.18-lts-linux-amd64"
+    
+    if [ -d "$install_dir" ]; then
+        log "授予 install.sh 执行权限..."
+        chmod +x "$install_dir/install.sh"
+        if [ $? -eq 0 ]; then
+            log "权限授予成功"
+        else
+            log "权限授予失败"
+            exit 1
+        fi
     else
-        log "权限授予失败"
+        log "安装目录不存在：$install_dir"
         exit 1
     fi
 }
