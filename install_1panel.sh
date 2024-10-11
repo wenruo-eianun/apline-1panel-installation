@@ -169,7 +169,8 @@ function Set_Port() {
             continue
         fi
 
-        if ss -tlun | grep -q ":$PANEL_PORT "; then
+        # 替换这里的端口检查
+        if ss -tlun | grep ":$PANEL_PORT " >/dev/null; then
             log "端口$PANEL_PORT被占用，请重新输入..."
             continue
         fi
@@ -178,6 +179,7 @@ function Set_Port() {
         break
     done
 }
+
 
 function Set_Firewall() {
     if command -v iptables >/dev/null 2>&1; then
