@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# 定义 GitHub 仓库的原始链接
+GITHUB_URL="https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/refs/heads/main/uninstall_docker.sh"
+
+# 下载 install_docker.sh
+curl -fsSL $GITHUB_URL -o uninstall_docker.sh
+
+# 赋予执行权限
+chmod +x uninstall_docker.sh
+
+# 执行脚本
+sudo ./uninstall_docker.sh
