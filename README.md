@@ -5,6 +5,7 @@
 ```base
 curl -fsSL https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/refs/heads/main/dockerinstall | bash
 ```
+###  Linux一键删除docker
 ```base
 curl -fsSL https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/refs/heads/main/dockeruninstall | bash
 ```
