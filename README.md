@@ -1,6 +1,9 @@
 让apline系统安装1panle 套娃docker运行 安装脚本以及卸载脚本
-
-
+博客：https://qk.free.nf/index.php/archives/77/
+###  Linux一键安装docker
+```base
+curl -fsSL https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/refs/heads/main/dockerinstall | bash
+```
 
 ###  一键安装指令
 在终端中运行以下命令来一键安装 `1Panel`：
