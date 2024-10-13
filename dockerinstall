@@ -1,13 +1,60 @@
 #!/bin/bash
 
+# 日志记录函数
+log() {
+  echo -e "\033[1;32m[$(date '+%Y-%m-%d %H:%M:%S')] $1 \033[0m"
+}
+
+# 检测用户是否是 root
+if [ "$(id -u)" -ne 0 ]; then
+  log "请以 root 用户运行此脚本"
+  exit 1
+fi
+
 # 定义 GitHub 仓库的原始链接
 GITHUB_URL="https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/refs/heads/main/install_docker.sh"
 
+# 获取操作系统信息
+. /etc/os-release
+
+install_docker_script="install_docker.sh"
+
 # 下载 install_docker.sh
-curl -fsSL $GITHUB_URL -o install_docker.sh
+log "下载 Docker 安装脚本..."
+curl -fsSL $GITHUB_URL -o $install_docker_script
 
 # 赋予执行权限
-chmod +x install_docker.sh
+chmod +x $install_docker_script
 
-# 执行脚本
-sudo ./install_docker.sh
+# 根据不同的操作系统执行安装脚本
+log "检测系统: $ID"
+
+case "$ID" in
+  ubuntu|debian|kali)
+    log "系统为 Ubuntu/Debian/Kali"
+    ./install_docker.sh
+    ;;
+  
+  centos|fedora|rhel|alma|rocky)
+    log "系统为 CentOS/Fedora/RedHat/Alma/Rocky"
+    ./install_docker.sh
+    ;;
+
+  alpine)
+    log "系统为 Alpine"
+    ./install_docker.sh
+    ;;
+
+  arch)
+    log "系统为 Arch Linux"
+    ./install_docker.sh
+    ;;
+
+  *)
+    log "不支持的系统: $ID"
+    exit 1
+    ;;
+esac
+
+# 安装完成
+log "安装docker脚本完成下面进行安装"
