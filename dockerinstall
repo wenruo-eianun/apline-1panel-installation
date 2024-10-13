@@ -57,4 +57,4 @@ case "$ID" in
 esac
 
 # 安装完成
-log "安装docker脚本完成下面进行安装"
+log "脚本完成"
