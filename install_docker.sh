@@ -92,8 +92,28 @@ case "$ID" in
 esac
 
 # 启动并设置 Docker 开机自启
-systemctl start docker
-systemctl enable docker
+case "$ID" in
+  ubuntu|debian|kali)
+    systemctl start docker
+    systemctl enable docker
+    ;;
+  centos|fedora|rhel|alma|rocky)
+    systemctl start docker
+    systemctl enable docker
+    ;;
+  alpine)
+    service docker start
+    rc-update add docker boot
+    ;;
+  arch)
+    systemctl start docker
+    systemctl enable docker
+    ;;
+  *)
+    log "无法启动 Docker 服务"
+    exit 1
+    ;;
+esac
 
 # 验证 Docker 是否正确安装
 if docker --version > /dev/null 2>&1; then
