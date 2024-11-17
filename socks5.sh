@@ -1,94 +1,95 @@
-#!/bin/bash
+#!/bin/sh
 
-# 检查并安装danted
+# 函数用于生成随机字符串
+generate_random_string() {
+    cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1
+}
+
+# 检查是否已安装dante
 if ! command -v danted &> /dev/null; then
-    echo "danted 未安装，正在安装..."
+    echo "Dante Server未安装。正在安装..."
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         case $ID in
-            ubuntu|debian|kali)
+            ubuntu|debian)
                 sudo apt-get update && sudo apt-get install -y dante-server
                 ;;
-            centos|rocky|alma|fedora|redhat)
+            centos|rhel)
+                sudo yum install -y epel-release
                 sudo yum install -y dante-server
-                ;;
-            arch)
-                sudo pacman -Syu --noconfirm dante
                 ;;
             alpine)
                 sudo apk update && sudo apk add dante
                 ;;
             *)
-                echo "无法自动安装，请手动安装dante-server或dante软件包。"
+                echo "不支持的Linux发行版，请手动安装dante-server。"
                 exit 1
                 ;;
         esac
     else
-        echo "无法确定系统类型，请手动安装dante-server或dante软件包。"
+        echo "无法确定您的Linux发行版，请手动安装dante-server。"
         exit 1
     fi
 fi
 
-# 生成随机端口、用户名和密码
-PORT=${1:-$(shuf -i 1025-65535 -n 1)}
-USERNAME=${2:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)}
-PASSWORD=${3:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)}
+# 询问用户输入
+read -p "请输入SOCKS5服务器的端口（留空自动生成）: " PORT
+read -p "请输入SOCKS5服务器的用户名（留空自动生成）: " USERNAME
+read -p "请输入SOCKS5服务器的密码（留空自动生成）: " PASSWORD
 
-# 提示用户输入端口、用户名和密码
-read -p "请输入SOCKS5服务器的端口（留空自动生成）: " input_port
-PORT=${input_port:-$PORT}
-
-read -p "请输入SOCKS5服务器的用户名（留空自动生成）: " input_username
-USERNAME=${input_username:-$USERNAME}
-
-read -p "请输入SOCKS5服务器的密码（留空自动生成）: " input_password
-PASSWORD=${input_password:-$PASSWORD}
-
-# 配置文件路径
-CONF_FILE="/etc/danted.conf"
-
-# 备份原配置文件
-sudo cp $CONF_FILE ${CONF_FILE}.bak
-
-# 更新配置文件
-sudo sed -i "s/^port\s*=.*/port = $PORT/" $CONF_FILE
-sudo sed -i "s/^user\.notprivileged\s*=.*/user.notprivileged = $USERNAME/" $CONF_FILE
-sudo sed -i "s/^pass\s*=.*/pass = $PASSWORD/" $CONF_FILE
-
-# 保存配置信息到文件
-echo "SOCKS5 Server Port: $PORT" > /root/socks5_config.txt
-echo "SOCKS5 Server Username: $USERNAME" >> /root/socks5_config.txt
-echo "SOCKS5 Server Password: $PASSWORD" >> /root/socks5_config.txt
-echo "配置信息已保存到 /root/socks5_config.txt"
-
-# 启动或重启danted服务
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    case $ID in
-        ubuntu|debian|kali|fedora|arch|alpine)
-            if sudo systemctl is-active --quiet danted; then
-                sudo systemctl restart danted
-            else
-                sudo systemctl start danted
-            fi
-            sudo systemctl enable danted
-            sudo systemctl status danted --no-pager
-            ;;
-        centos|rocky|alma|redhat)
-            if sudo systemctl is-active --quiet danted; then
-                sudo systemctl restart danted
-            else
-                sudo systemctl start danted
-            fi
-            sudo systemctl enable danted
-            sudo systemctl status danted --no-pager
-            ;;
-        *)
-            echo "无法自动启动或重启danted服务，请手动操作。"
-            ;;
-    esac
-else
-    echo "无法确定系统类型，请手动启动或重启danted服务。"
+# 如果用户输入为空，则自动生成
+if [ -z "$PORT" ]; then
+    PORT=$(shuf -i 10000-65535 -n 1)
 fi
 
-echo "danted服务已配置并启动。"
+if [ -z "$USERNAME" ]; then
+    USERNAME=$(generate_random_string)
+fi
+
+if [ -z "$PASSWORD" ]; then
+    PASSWORD=$(generate_random_string)
+fi
+
+# 创建配置文件
+cat << EOF > /etc/danted.conf
+logoutput: /var/log/danted.log
+internal: eth0 port = $PORT
+external: eth0
+method: username
+user.privileged: root
+user.unprivileged: nobody
+
+client pass {
+    from: 0.0.0.0/0 to: 0.0.0.0/0
+    log: error
+}
+
+socks pass {
+    from: 0.0.0.0/0 to: 0.0.0.0/0
+    command: bind connect udpassociate
+    log: error
+    user: $USERNAME:$PASSWORD
+}
+EOF
+
+# 设置danted服务
+# 对于Alpine Linux，使用rc-update和service命令
+if [ "$ID" = "alpine" ]; then
+    sudo rc-update add danted default
+    sudo service danted start
+    sudo service danted status
+else
+    sudo systemctl enable danted
+    sudo systemctl start danted
+    sudo systemctl status danted
+fi
+
+# 输出节点信息
+echo "SOCKS5服务器已成功设置。以下是您的节点信息:"
+echo "-------------------------------"
+echo "服务器地址: $(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')"
+echo "端口: $PORT"
+echo "用户名: $USERNAME"
+echo "密码: $PASSWORD"
+echo "-------------------------------"
+echo "请确保防火墙允许$PORT端口的流量通过。"
