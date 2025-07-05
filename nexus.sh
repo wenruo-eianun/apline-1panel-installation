@@ -98,10 +98,10 @@ function check_pm2() {
 
 
 #================================================================================
-# 核心功能模块 (与原版基本一致)
+# 核心功能模块
 #================================================================================
 
-# 构建docker镜像函数
+# 构建docker镜像函数 (已修正软件源超时问题)
 function build_image() {
     WORKDIR=$(mktemp -d)
     cd "$WORKDIR"
@@ -112,6 +112,10 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PROVER_ID_FILE=/root/.nexus/node-id
 
+# 核心修正：将官方源替换为速度更快的内核组织镜像源，解决构建超时问题
+RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.kernel.org/ubuntu/|g' /etc/apt/sources.list.d/ubuntu.sources
+
+# 现在从更快的源更新和安装软件
 RUN apt-get update && apt-get install -y \
     curl \
     screen \
@@ -630,9 +634,9 @@ setup_log_cleanup_cron
 
 while true; do
     clear
-    echo "脚本由哈哈哈哈编写，推特 @ferdie_jhovie，免费开源，请勿相信收费"
+    echo "脚本由哈哈哈哈编写，eianun修改适配Linux，免费开源，请勿相信收费"
     echo "如有问题，可联系推特，仅此只有一个号"
-    echo "========== Nexus 多节点管理 (通用兼容版) =========="
+    echo "========== Nexus 多节点管理 (通用修正版) =========="
     echo "1. 安装并启动新节点"
     echo "2. 显示所有节点状态"
     echo "3. 批量停止并卸载指定节点"
