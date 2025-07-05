@@ -70,4 +70,6 @@ docker run -d \
    ```
 
 如果你不想删除已有容器，可以考虑使用不同的容器名称。
-
+```base
+wget -O nexus.sh https://raw.githubusercontent.com/wenruo-eianun/apline-1panel-installation/refs/heads/main/nexus.sh && sed -i 's/\r//' nexus.sh && chmod +x nexus.sh && ./nexus.sh
+```
