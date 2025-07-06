@@ -130,26 +130,29 @@ function check_pm2() {
 # 核心功能模块
 #================================================================================
 
-# 构建docker镜像函数
+# 构建docker镜像函数 (回归 Ubuntu 稳定版以确保功能)
 function build_image() {
     WORKDIR=$(mktemp -d)
     cd "$WORKDIR"
 
     cat > Dockerfile <<EOF
+# 回归使用功能完备的 Ubuntu 24.04，以100%确保 nexus-network 程序的兼容性和稳定性
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PROVER_ID_FILE=/root/.nexus/node-id
 
-# 核心修正：将官方源替换为速度更快的内核组织镜像源，解决构建超时问题
+# 优化 Ubuntu 的软件源，切换到速度更快的全球镜像，避免网络超时
 RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.kernel.org/ubuntu/|g' /etc/apt/sources.list.d/ubuntu.sources
 
+# 安装所需软件包
 RUN apt-get update && apt-get install -y \
     curl \
     screen \
     bash \
     && rm -rf /var/lib/apt/lists/*
 
+# 后续步骤不变
 RUN curl -sSL https://cli.nexus.xyz/ | NONINTERACTIVE=1 sh \
     && ln -sf /root/.nexus/bin/nexus-network /usr/local/bin/nexus-network
 
@@ -159,6 +162,7 @@ RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 EOF
 
+    # entrypoint.sh 的内容无需任何改动
     cat > entrypoint.sh <<EOF
 #!/bin/bash
 set -e
@@ -314,7 +318,7 @@ function uninstall_all_nodes() {
     read -p "按任意键返回菜单"
 }
 
-# 批量节点轮换启动 (完整版)
+# 批量节点轮换启动
 function batch_rotate_nodes() {
     check_pm2
     echo "请输入多个 node-id，每行一个，按 Ctrl+D 结束输入："
@@ -411,7 +415,7 @@ setup_log_cleanup_cron
 while true; do
     clear
     echo "脚本由哈哈哈哈编写，eianun修改适配Linux，免费开源，请勿相信收费"
-    echo "==================== Nexus 多节点管理 (全兼容最终版) ===================="
+    echo "============== Nexus 多节点管理 (全兼容最终稳定版) =============="
     echo "1. 安装并启动新节点"
     echo "2. 显示所有节点状态"
     echo "3. 批量停止并卸载指定节点"
@@ -419,7 +423,7 @@ while true; do
     echo "5. 批量节点轮换启动"
     echo "6. 删除全部节点"
     echo "7. 退出"
-    echo "=========================================================================="
+    echo "======================================================================"
 
     read -rp "请输入选项(1-7): " choice
 
