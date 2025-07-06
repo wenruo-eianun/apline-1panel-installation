@@ -119,45 +119,73 @@ function check_pm2() {
 # 核心功能模块
 #================================================================================
 
-# 构建docker镜像函数
+# 构建docker镜像函数 (回归 Ubuntu 稳定版以确保功能)
 function build_image() {
     WORKDIR=$(mktemp -d)
     cd "$WORKDIR"
 
     cat > Dockerfile <<EOF
+# 回归使用功能完备的 Ubuntu 24.04，以100%确保 nexus-network 程序的兼容性和稳定性
 FROM ubuntu:24.04
+
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PROVER_ID_FILE=/root/.nexus/node-id
+
+# 优化 Ubuntu 的软件源，切换到速度更快的全球镜像，避免网络超时
 RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.kernel.org/ubuntu/|g' /etc/apt/sources.list.d/ubuntu.sources
-RUN apt-get update && apt-get install -y curl screen bash && rm -rf /var/lib/apt/lists/*
-RUN curl -sSL https://cli.nexus.xyz/ | NONINTERACTIVE=1 sh && ln -sf /root/.nexus/bin/nexus-network /usr/local/bin/nexus-network
+
+# 安装所需软件包
+RUN apt-get update && apt-get install -y \
+    curl \
+    screen \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+# 后续步骤不变
+RUN curl -sSL https://cli.nexus.xyz/ | NONINTERACTIVE=1 sh \
+    && ln -sf /root/.nexus/bin/nexus-network /usr/local/bin/nexus-network
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
 ENTRYPOINT ["/entrypoint.sh"]
 EOF
 
+    # entrypoint.sh 的内容无需任何改动
     cat > entrypoint.sh <<EOF
 #!/bin/bash
 set -e
 PROVER_ID_FILE="/root/.nexus/node-id"
-if [ -z "\$NODE_ID" ]; then echo "错误：未设置 NODE_ID 环境变量"; exit 1; fi
+if [ -z "\$NODE_ID" ]; then
+    echo "错误：未设置 NODE_ID 环境变量"
+    exit 1
+fi
 echo "\$NODE_ID" > "\$PROVER_ID_FILE"
 echo "使用的 node-id: \$NODE_ID"
-if ! command -v nexus-network >/dev/null 2>&1; then echo "错误：nexus-network 未安装或不可用"; exit 1; fi
+if ! command -v nexus-network >/dev/null 2>&1; then
+    echo "错误：nexus-network 未安装或不可用"
+    exit 1
+fi
 screen -S nexus -X quit >/dev/null 2>&1 || true
 echo "启动 nexus-network 节点..."
 screen -dmS nexus bash -c "nexus-network start --node-id \$NODE_ID &>> /root/nexus.log"
 sleep 3
 if screen -list | grep -q "nexus"; then
-    echo "节点已在后台启动。日志文件：/root/nexus.log"
+    echo "节点已在后台启动。"
+    echo "日志文件：/root/nexus.log"
     echo "可以使用 docker logs \$CONTAINER_NAME 查看日志"
 else
-    echo "节点启动失败，请检查日志。"; cat /root/nexus.log; exit 1
+    echo "节点启动失败，请检查日志。"
+    cat /root/nexus.log
+    exit 1
 fi
 tail -f /root/nexus.log
 EOF
 
     docker build -t "$IMAGE_NAME" .
-    cd - && rm -rf "$WORKDIR"
+
+    cd -
+    rm -rf "$WORKDIR"
 }
 
 # 启动容器
@@ -369,19 +397,10 @@ function setup_log_cleanup_cron() {
     echo "已设置或确认了日志清理定时任务。"
 }
 
-# ==================== 新增功能 ====================
 # 彻底卸载脚本及所有相关组件
 function uninstall_everything() {
     echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!! 警告 !!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     echo "这是一个非常危险的操作，将彻底从您的系统中移除此脚本及其创建的所有内容。"
-    echo
-    echo "将执行以下操作："
-    echo "  1. 停止并删除所有 Nexus 节点容器。"
-    echo "  2. 删除为节点构建的 Docker 镜像 '$IMAGE_NAME'。"
-    echo "  3. 删除 PM2 中的 'nexus-rotate' 进程 (如果存在)。"
-    echo "  4. 删除所有日志目录 '$LOG_DIR'。"
-    echo "  5. 删除轮换任务脚本目录 '/root/nexus_scripts'。"
-    echo "  6. 从定时任务(crontab)中移除日志清理条目。"
     echo
     read -rp "您确定要继续吗？此操作无法撤销！(请输入 'yes' 以确认): " confirm
     if [ "$confirm" != "yes" ]; then
@@ -390,47 +409,34 @@ function uninstall_everything() {
         return
     fi
 
-    echo "-----------------------------------------------------"
-    echo "正在开始彻底卸载流程..."
-    
-    echo "[1/6] 正在停止并删除所有节点容器..."
-    docker ps -a --filter "name=${BASE_CONTAINER_NAME}" --format "{{.Names}}" | xargs -r docker rm -f || echo "  -> 没有找到要删除的容器。"
+    echo "正在停止并删除所有节点容器..."
+    docker ps -a --filter "name=${BASE_CONTAINER_NAME}" --format "{{.Names}}" | xargs -r docker rm -f || true
 
-    echo "[2/6] 正在删除 Docker 镜像 '$IMAGE_NAME'..."
-    docker rmi -f "$IMAGE_NAME" 2>/dev/null || echo "  -> 没有找到要删除的镜像，或已被删除。"
+    echo "正在删除 Docker 镜像 '$IMAGE_NAME'..."
+    docker rmi -f "$IMAGE_NAME" 2>/dev/null || true
 
     if command -v pm2 >/dev/null 2>&1; then
-        echo "[3/6] 正在删除 PM2 进程..."
-        pm2 delete nexus-rotate 2>/dev/null || echo "  -> 没有找到名为 'nexus-rotate' 的 PM2 进程。"
+        echo "正在删除 PM2 进程..."
+        pm2 delete nexus-rotate 2>/dev/null || true
         pm2 save --force >/dev/null 2>&1 || true
     fi
 
-    echo "[4/6] 正在删除日志目录 '$LOG_DIR'..."
+    echo "正在删除日志和脚本目录..."
     rm -rf "$LOG_DIR"
-    echo "  -> 日志目录已删除。"
-
-    echo "[5/6] 正在删除脚本目录 '/root/nexus_scripts'..."
     rm -rf "/root/nexus_scripts"
-    echo "  -> 脚本目录已删除。"
 
     if command -v crontab >/dev/null 2>&1; then
-        echo "[6/6] 正在移除 cron 日志清理任务..."
+        echo "正在移除 cron 日志清理任务..."
         (crontab -l 2>/dev/null | grep -v "$LOG_DIR") | crontab -
-        echo "  -> cron 任务已移除。"
     fi
     
-    echo "-----------------------------------------------------"
     echo "所有相关组件已成功卸载！"
     
     read -rp "是否要删除此管理脚本文件本身 '$0'？(y/N): " delete_self
     if [[ "$delete_self" =~ ^[Yy]$ ]]; then
         echo "正在删除脚本文件..."
-        # 这是脚本的最后一条命令，执行后脚本将消失
         rm -- "$0"
         echo "脚本已删除。再见！"
-    else
-        echo "脚本文件已保留。卸载完成。"
-        read -p "按任意键退出。"
     fi
 }
 
@@ -462,11 +468,7 @@ while true; do
         1)
             check_docker
             read -rp "请输入您的 node-id: " NODE_ID
-            if [ -z "$NODE_ID" ]; then
-                echo "node-id 不能为空。"
-                read -p "按任意键继续"
-                continue
-            fi
+            if [ -z "$NODE_ID" ]; then echo "node-id 不能为空。"; read -p "按任意键继续"; continue; fi
             echo "开始构建镜像并启动容器..."
             build_image
             run_container "$NODE_ID"
