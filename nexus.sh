@@ -202,7 +202,8 @@ function run_container() {
         touch "$log_file"
         chmod 644 "$log_file"
     fi
-    docker run -d --name "$container_name" -v "$log_file":/root/nexus.log -e NODE_ID="$node_id" "$IMAGE_NAME"
+    # docker run -d --name "$container_name" -v "$log_file":/root/nexus.log -e NODE_ID="$node_id" "$IMAGE_NAME"
+    docker run -d --name "$container_name" **--memory="2g"** -v "$log_file":/root/nexus.log -e NODE_ID="$node_id" "$IMAGE_NAME"
     echo "容器 $container_name 已启动！"
 }
 
