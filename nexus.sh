@@ -202,15 +202,10 @@ function run_container() {
         touch "$log_file"
         chmod 644 "$log_file"
     fi
-     # --- 新增的调试代码 ---
-    echo "--- [调试信息] ---"
-    echo "准备执行的 Docker 命令是:"
-    echo "docker run -d --name \"$container_name\" --memory=\"2g\" -v \"$log_file\":/root/nexus.log -e NODE_ID=\"$node_id\" \"$IMAGE_NAME\""
-    echo "--- [调试结束] ---"
-    # 这是你原来的 docker run 命令
-    docker run -d --name "$container_name" --memory="2g" -v "$log_file":/root/nexus.log -e NODE_ID="$node_id" "$IMAGE_NAME"
+    docker run -d --name "$container_name" -v "$log_file":/root/nexus.log -e NODE_ID="$node_id" "$IMAGE_NAME"
     echo "容器 $container_name 已启动！"
 }
+
 # 卸载节点
 function uninstall_node() {
     local node_id=$1
